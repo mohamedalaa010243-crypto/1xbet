@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Apple of Fortune</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0; min-height:100vh; font-family:Arial,Tahoma,sans-serif; color:#fff;
+  background:
+    radial-gradient(circle at 50% 35%,rgba(18,180,105,.34),transparent 38%),
+    linear-gradient(150deg,#063b35 0%,#087e69 42%,#073a30 100%);
+  overflow-x:hidden;
+}
+body:before{
+  content:""; position:fixed; inset:0; pointer-events:none; opacity:.22;
+  background:radial-gradient(circle at 15% 80%,#49c56b 0 2%,transparent 20%),
+             radial-gradient(circle at 85% 65%,#9fd45b 0 2%,transparent 22%);
+}
+.app{width:min(520px,100%);margin:auto;padding:18px 14px 28px;position:relative}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.icon{width:42px;height:42px;border-radius:50%;background:#ffffff1c;border:1px solid #ffffff45;display:grid;place-items:center;font-size:25px}
+.balance{display:flex;align-items:center;gap:8px;background:#071d1a99;border-radius:14px;padding:6px 12px;font-weight:800}
+.plus{width:42px;height:42px;border-radius:12px;background:#39c86a;display:grid;place-items:center;font-size:28px}
+.title{text-align:center;font-size:20px;letter-spacing:.5px;margin:24px 0 15px}
+.game{background:#0002;border-radius:24px;padding:8px 8px 12px;box-shadow:0 18px 50px #0005}
+.row{display:grid;grid-template-columns:74px repeat(5,1fr);align-items:center;gap:7px;margin:7px 0}
+.mult{height:56px;border-radius:16px;background:#063e36cc;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;direction:ltr}
+.mult.active{background:#64cf51;color:#082617}
+.apple{
+  aspect-ratio:1; border:0; border-radius:50%; cursor:pointer; position:relative;
+  background:linear-gradient(145deg,#8d4d25,#bd7135 45%,#703b22);
+  box-shadow:inset 0 5px 10px #ffffff22, inset 0 -8px 10px #0005, 0 3px 7px #0007;
+  transition:transform .12s,filter .15s;
+}
+.apple:hover{filter:brightness(1.15);transform:translateY(-2px)}
+.apple:active{transform:scale(.94)}
+.apple:after{content:"";position:absolute;inset:17%;border-radius:50%;border-top:2px solid #ffffff18;border-bottom:2px solid #0003}
+.apple.correct{background:linear-gradient(145deg,#079447,#24c35b 45%,#056936)}
+.apple.wrong{background:linear-gradient(145deg,#9d2c25,#e34c3e 48%,#76201d)}
+.apple.revealed{pointer-events:none}
+.apple.revealed:before{
+  content:"";position:absolute;inset:0;display:grid;place-items:center;font-size:29px;z-index:2
+}
+.apple.good.revealed:before{content:"✓"}
+.apple.bad.revealed:before{content:"✕"}
+.apple .leaf{position:absolute;width:19px;height:8px;background:#55c84c;border-radius:100% 0 100% 0;right:18%;top:13%;transform:rotate(-25deg)}
+.apple .stem{position:absolute;width:5px;height:13px;background:#653d20;border-radius:5px;top:5%;right:46%}
+.panel{margin-top:16px}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button,.action{
+  border:0;border-radius:14px;padding:15px 12px;font-size:18px;font-weight:800;color:#fff;
+  background:#3e8fe4;cursor:pointer
+}
+button:disabled{opacity:.45;cursor:not-allowed}
+.betbox{margin-top:10px;background:#173c61e8;border-radius:18px;padding:13px}
+.betline{display:flex;align-items:center;gap:10px}
+.betbox input{width:100%;background:transparent;border:0;border-bottom:2px solid #ffffff55;color:#fff;font-size:27px;font-weight:800;text-align:right;outline:none}
+.betbox small{display:block;text-align:center;color:#b9cad8;margin-top:8px}
+.bottom{display:flex;justify-content:space-between;margin-top:18px;color:#fff;font-weight:700}
+.status{text-align:center;min-height:28px;margin:10px 0 0;font-weight:800}
+.overlay{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;padding:20px;z-index:10}
+.modal{width:min(390px,100%);background:#123b36;border:1px solid #ffffff22;border-radius:24px;padding:25px;text-align:center;box-shadow:0 20px 60px #000}
+.modal h2{margin:0 0 10px;font-size:28px}.modal p{color:#cde1dc}
+.modal button{width:100%;margin-top:10px;background:#39b85c}
+@media(max-width:390px){.app{padding:12px 8px}.row{grid-template-columns:62px repeat(5,1fr);gap:5px}.mult{font-size:12px;height:49px}.title{margin-top:17px}}
+</style>
+</head>
+<body>
+<main class="app">
+  <div class="top">
+    <div class="icon">ⓘ</div>
+    <div class="balance"><div class="plus">+</div><span id="balance">1000</span> نقطة</div>
+    <div class="icon">→</div>
+  </div>
+
+  <div class="title">APPLE OF FORTUNE</div>
+
+  <section class="game" id="game"></section>
+
+  <div class="panel">
+    <div class="controls">
+      <button id="cashout">تحصيل</button>
+      <button id="reset" style="background:#3288dc">لعبة جديدة</button>
+    </div>
+
+    <div class="betbox">
+      <div class="betline">
+        <input id="bet" type="number" min="1" max="1000" value="20" inputmode="numeric">
+        <span>نقطة</span>
+      </div>
+      <small>الرصيد الابتدائي: 1000 نقطة — اختر تفاحة صحيحة للانتقال للصف التالي</small>
+    </div>
+    <div class="status" id="status">ابدأ باختيار تفاحة في الصف الأول</div>
+    <div class="bottom"><span>⚡ نقرة واحدة</span><span>⚙ إعدادات</span></div>
+  </div>
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2 id="modalTitle">انتهت الجولة</h2>
+    <p id="modalText"></p>
+    <button id="modalReset">العب مرة أخرى</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const ROWS = 10, COLS = 5;
+  const multipliers = [1.25,1.55,1.95,2.45,3.1,3.9,4.9,6.2,7.8,10];
+  let balance = 1000, row = 0, bet = 20, active = true, currentWin = 0;
+  const game = document.getElementById('game');
+  const balanceEl = document.getElementById('balance');
+  const betEl = document.getElementById('bet');
+  const status = document.getElementById('status');
+  const overlay = document.getElementById('overlay');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalText = document.getElementById('modalText');
+
+  function clampBet(){
+    let v = Number(betEl.value);
+    if(!Number.isFinite(v) || v < 1) v = 1;
+    v = Math.min(Math.floor(v), Math.max(1, balance));
+    betEl.value = v;
+    return v;
+  }
+
+  function wrongCount(r){
+    // الصفوف 1-7: تفاحة غلط واحدة
+    // الصف 8: 2 غلط، الصف 9: 3 غلط، الصف 10: 4 غلط
+    return r < 7 ? 1 : r - 5;
+  }
+
+  function updateBalance(){ balanceEl.textContent = Math.max(0, Math.round(balance)); }
+
+  function buildBoard(){
+    game.innerHTML = '';
+    for(let r=0;r<ROWS;r++){
+      const rowEl = document.createElement('div');
+      rowEl.className = 'row';
+      const m = document.createElement('div');
+      m.className = 'mult' + (r === row ? ' active' : '');
+      m.textContent = '× ' + multipliers[r].toFixed(2);
+      rowEl.appendChild(m);
+
+      let wrong = new Set();
+      while(wrong.size < wrongCount(r)) wrong.add(Math.floor(Math.random()*COLS));
+
+      for(let c=0;c<COLS;c++){
+        const b = document.createElement('button');
+        b.type='button'; b.className='apple';
+        b.setAttribute('aria-label', `الصف ${r+1} التفاحة ${c+1}`);
+        const stem=document.createElement('span'); stem.className='stem';
+        const leaf=document.createElement('span'); leaf.className='leaf';
+        b.append(stem,leaf);
+        b.dataset.row=r; b.dataset.bad=wrong.has(c) ? '1':'0';
+        b.addEventListener('click', choose);
+        if(r !== row) b.disabled = true;
+        rowEl.appendChild(b);
+      }
+      game.appendChild(rowEl);
+    }
+  }
+
+  function choose(e){
+    if(!active) return;
+    const b=e.currentTarget;
+    const r=Number(b.dataset.row);
+    if(r !== row) return;
+    bet = clampBet();
+    if(balance < bet){
+      endGame('رصيد غير كافٍ', 'رصيدك لا يكفي للرهان الحالي.');
+      return;
+    }
+
+    if(b.dataset.bad === '1'){
+      b.classList.add('wrong','bad','revealed');
+      document.querySelectorAll(`.row:nth-child(${r+1}) .apple`).forEach(x=>{
+        x.disabled=true;
+        if(x.dataset.bad==='0') x.classList.add('correct','good','revealed');
+      });
+      balance -= bet;
+      updateBalance();
+      endGame('خسرت الجولة', `اخترت التفاحة الغلط. تم خصم ${bet} نقطة.`);
+      return;
+    }
+
+    b.classList.add('correct','good','revealed');
+    currentWin = Math.round(bet * multipliers[r]);
+    status.textContent = `ممتاز! ربحك المحتمل الآن ${currentWin} نقطة — ×${multipliers[r].toFixed(2)}`;
+    if(r === ROWS-1){
+      balance += currentWin;
+      updateBalance();
+      endGame('فوز كامل 🎉', `وصلت إلى الصف العاشر وربحت ${currentWin} نقطة.`);
+      return;
+    }
+    row++;
+    buildBoard();
+  }
+
+  function endGame(title,text){
+    active=false;
+    modalTitle.textContent=title;
+    modalText.textContent=text;
+    overlay.style.display='flex';
+  }
+
+  function resetGame(){
+    bet=clampBet();
+    if(balance <= 0){ balance=1000; }
+    row=0; active=true; currentWin=0;
+    status.textContent='ابدأ باختيار تفاحة في الصف الأول';
+    updateBalance(); buildBoard(); overlay.style.display='none';
+  }
+
+  document.getElementById('reset').addEventListener('click', resetGame);
+  document.getElementById('modalReset').addEventListener('click', resetGame);
+  document.getElementById('cashout').addEventListener('click',()=>{
+    if(!active || row===0) return;
+    const reward=Math.round(bet * multipliers[row-1]);
+    balance += reward;
+    updateBalance();
+    endGame('تم التحصيل 💰', `تمت إضافة ${reward} نقطة إلى رصيدك.`);
+  });
+
+  betEl.addEventListener('change', clampBet);
+  updateBalance(); buildBoard();
+})();
+</script>
+</body>
+</html>
